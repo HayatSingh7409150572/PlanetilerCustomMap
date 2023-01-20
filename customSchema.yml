@@ -1,0 +1,244 @@
+schema_name: Shortbread
+schema_description: A basic, lean, general-purpose vector tile schema for OpenStreetMap data. See https://shortbread.geofabrik.de/
+attribution: <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>
+examples: shortbread.spec.yml
+sources:
+  osm:
+    type: osm
+    local_path: '/data/sources/westZone.osm.pbf'
+tag_mappings: #Specifies that certain tags should have their values parsed to a certain data type. This can be specified as an object where key is the tag name and value is the data type, for example:
+  building:levels: double
+  height: double
+
+definitions:
+  # TODO let attribute definitions set multiple keys so you can just use `- *names`
+  attributes:
+    - &name
+      key: name
+    - &name_en
+      key: name_en
+      tag_value: name:en
+
+layers:
+  ##  Streets and Transport
+  - id: transportation
+    features:
+      - source: osm
+        geometry: line
+        # min_zoom:
+        # default_value: 11
+        # overrides:
+        #   4:
+        #     highway:
+        #        - motorway
+        #        - trunk
+        #        - primary
+        #   5:
+        #     highway:
+        #       - trunk
+        #   7:
+        #     highway:
+        #        - primary
+        #   9:
+        #     highway:
+        #       - secondary
+        #       - motorway_link
+        #       - trunk_link
+        #       - primary_link
+        #       - secondary_link
+        #   11:
+        #     highway:
+        #        - tertiary
+        #        - tertiary_link
+        #   12:
+        #     highway:
+        #        - unclassified
+        #        - residential
+        #        - road
+        #        - living_street
+        #   13:
+        #      highway:
+        #        - cycleway
+        #        - byway
+        #        - bridleway
+        #        - track
+        #   14:
+        #      highway:
+        #        - byway
+        #        - bridleway
+        #        - track
+        #        - footwaypath
+        #        - steps
+        #        - pedestrian
+        include_when:
+          highway:
+            - motorway
+            - motorway_link
+            - trunk
+            - trunk_link
+            - primary
+            - primary_link
+            - secondary
+            - secondary_link
+            - tertiary
+            - tertiary_link
+            - unclassified
+            - residential
+            - living_street
+            - service
+            - pedestrian
+            - track
+            - footway
+            - steps
+            - path
+            - cycleway
+            - man_made
+          aeroway: # TODO update shortbread spec
+            - runway
+            - taxiway
+          # railway:
+          # - rail
+          # - narrow_gauge
+          # - tram
+          # - light_rail
+          # - funicular
+          # - subway
+          # - monorail
+          route:
+            - ferry
+        attributes:
+          - key: kind
+            value: '${ match_value.replace("_link", "") }'
+          - key: ramp
+            min_zoom: 1
+            value: 1
+            include_when:
+              highway: '%_link'
+            exclude_when:
+              ramp: 0
+
+          - key: rail
+            min_zoom: 11
+            value: true
+            include_when:
+              railway: __any__
+            # else: false
+          # - &tunnel_attr
+          - key: brunnel
+            min_zoom: 11
+            value:
+              - value: bridge
+                if:
+                  bridge: yes
+              - value: tunnel
+                if:
+                  tunnel: yes
+              - else: ''
+              # covered: yes
+            # exclude_when:
+            #   tunnel: false
+            #   covered: false
+            #   bridge: false
+            # ford: false
+            # else: false
+          # - &bridge_attr
+          #   key: bridge
+          #   min_zoom: 5
+          #   value: true
+          #   include_when:
+          #     bridge: yes
+          #   else: false
+          - key: tracktype
+            min_zoom: 11
+          - key: surface # TODO canonicalize?
+            min_zoom: 11
+          - key: service
+            min_zoom: 11
+          - key: bicycle
+            min_zoom: 11
+          - key: horse
+            min_zoom: 11
+        # - key: class
+        #   value: '${ match_value }'
+        #   include_when:
+        #       route: ferry
+
+      - source: osm
+        geometry: line
+        min_zoom: 9
+        include_when:
+          railway: __any__
+        attributes:
+          - key: class
+            value: '${ match_value }'
+          - key: service
+            value: siding
+            include_when:
+              railway: service
+
+      - source: osm
+        geometry: line
+        min_zoom: 12
+        include_when:
+          aerialway: __any__
+        attributes:
+          - key: kind
+            type: match_value
+
+      - source: osm
+        geometry: line
+        min_zoom: 12
+        include_when:
+          aerialway: __any__
+        attributes:
+          - key: kind
+            type: match_value
+
+  - id: building
+    features:
+      - source: osm
+        geometry: polygon
+        min_zoom: 5
+        include_when:
+          building: __any__
+        attributes:
+          - key: name
+          - key: apartments
+          - key: house
+          - key: school
+          - key: farm
+          - key: house
+          - key: houseboat
+          - key: residential
+          - key: commercial
+          - key: industrial
+          - key: office
+          - key: retail
+          - key: university
+          - key: yes
+          - key: barracks
+          - key: bungalow
+          - key: retail
+          - key: supermarket
+          - key: kiosk
+          - key: warehouse
+          - key: terrace
+          - key: tree_house
+          - key: hotel
+          - key: render_height
+          - key: college
+          - key: bridge
+          - key: civic
+          - key: government
+          - key: hospital
+          - key: public
+          - key: temple
+            value:
+              match:
+                - value: '${ feature.tags.get("height") }'
+                  if: { height: __any__ }
+                - value: '${ feature.tags.get("building:levels") * 3.66 }'
+                  if: { building:levels: __any__ }
+                - else: '${3.66}'
+          - *name
+          - *name_en

@@ -1,0 +1,84 @@
+schema_name: Shortbread
+schema_description: Planetiler custom schema development
+attribution: <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>
+
+sources:
+  osm:
+    type: osm
+    local_path: '/data/sources/westZone.osm.pbf'
+
+tag_mappings:
+  building:levels: double
+  height: double
+
+definitions:
+  attributes:
+    - &name
+      key: name
+    - &name_en
+      key: name_en
+      tag_value: name:en
+    - &name_de
+      key: name_de
+      tag_value: name:de
+
+layers:
+  - id: building
+    features:
+      - source: osm
+        geometry: polygon
+        min_zoom: 5
+        include_when:
+          building: __any__
+          # roof:shape: __any__
+          building:roof:shape: __any__
+        attributes:
+          # - key: name
+          # - key: apartments
+          # - key: house
+          # - key: school
+          # - key: farm
+          # - key: house
+          # - key: houseboat
+          # - key: residential
+          # - key: commercial
+          # - key: industrial
+          # - key: office
+          # - key: retail
+          # - key: university
+          # - key: yes
+          # - key: barracks
+          # - key: bungalow
+          # - key: retail
+          # - key: supermarket
+          # - key: kiosk
+          # - key: warehouse
+          # - key: terrace
+          # - key: tree_house
+          # - key: hotel
+          # - key: render_height
+          # - key: college
+          # - key: bridge
+          # - key: civic
+          # - key: government
+          # - key: hospital
+          # - key: public
+          - key: render_height
+            value:
+              match:
+                - value: '${ feature.tags.get("height") }'
+                  if: { height: __any__, building:roof:shape: __any__ }
+                - value: '${ feature.tags.get("building:levels") * 3.66 }'
+                  if: { building:levels: __any__, building:roof:shape: __any__ }
+                - value: '${ feature.tags.get("building:min_level") }'
+                  if: { building:min_level: __any__ }
+                - value: '${ feature.tags.get("min_height") }'
+                  if: { min_height: __any__ }
+                - else: '${3.66}'
+          # - key: shape
+          #   value: { match_value }
+          #   include_when:
+          #   roof:shape: __any__
+          - *name
+          - *name_en
+          - *name_de
