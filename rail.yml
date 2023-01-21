@@ -1,0 +1,32 @@
+schema_name: Shortbread
+schema_description: A basic, lean, general-purpose vector tile schema for OpenStreetMap data. See https://shortbread.geofabrik.de/
+attribution: <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>
+sources:
+  osm:
+    type: osm
+    local_path: '/data/sources/westZone.osm.pbf'
+# definitions:
+#   # TODO let attribute definitions set multiple keys so you can just use `- *names`
+#   attributes:
+#   - &name
+#     key: name
+#   - &name_en
+#     key: name_en
+#     tag_value: name:en
+#   - &name_de
+#     key: name_de
+#     tag_value: name:de
+
+layers:
+  - id: buildings
+    features:
+      - source: osm
+        geometry: polygon
+        min_zoom: 8
+        include_when:
+          __any__:
+            - building:min_height: __any__
+            - min_height: __any__
+        attributes:
+          - key: class
+            value: '${match_value}'
